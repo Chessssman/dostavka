@@ -3,6 +3,8 @@ from aiogram.types import CallbackQuery
 from keyboard import get_start_keyboard  # Импортируйте другие необходимые функции
 from keyboard import get_app_keyboard
 from keyboard import get_pay_keyboard
+from aiogram import types
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 
 # Создаем роутер для callback query
 callback_router = Router()
@@ -57,8 +59,14 @@ async def process_callback(callback: CallbackQuery):
             parse_mode="HTML"
         )
     
+    elif callback.data == "find_pickup":
+        await callback.message.answer(
+            "Пришлите своё текущее местоположение, чтобы увидеть пункты выдачи по близости!"
+        )
+        
     else:
         await callback.answer("Неизвестная команда")
     
     # Не забудьте ответить на callback query, чтобы убрать "часики" на кнопке
     await callback.answer()
+
