@@ -6,8 +6,8 @@ from aiogram.filters.command import Command
 from aiogram.exceptions import TelegramAPIError
 from dotenv import load_dotenv
 from keyboard import get_start_keyboard
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
-
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardRemove
+from callback_handler import callback_router
 
 load_dotenv()
 # Замените 'YOUR_BOT_TOKEN' на токен вашего бота
@@ -20,11 +20,15 @@ logging.basicConfig(level=logging.INFO)
 # Инициализация бота и диспетчера
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+dp.include_router(callback_router)
 
 # Обработчик команды /start
 @dp.message(Command("start"))
 async def cmd_start(message: types.Message):
-    await message.answer("Приветствую! Я бот **+7Доставки**. Расскажу, как бесплатно получать товары с топового маркетплейса РФ.", reply_markup= get_start_keyboard())
+    await message.answer("Обновляем интерфейс...", reply_markup=ReplyKeyboardRemove())
+    await message.answer("Приветствую! Я бот +7Доставки. Расскажу, как бесплатно получать товары с "
+        "<a href='https://www.ozon.ru/'>топового маркетплейса РФ</a>.", reply_markup= get_start_keyboard(),
+        parse_mode="HTML")
 
 
 # Функция для удаления вебхука
