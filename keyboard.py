@@ -7,14 +7,16 @@ from aiogram.filters.command import Command
 from aiogram.exceptions import TelegramAPIError
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 
+
 def get_start_keyboard():
     buttons = [
         [InlineKeyboardButton(text="📦 Как пользоваться доставкой?", callback_data="get_product")],
-        [InlineKeyboardButton(text="ℹ️ Как платить?", callback_data="info")],
+        [InlineKeyboardButton(text="ℹ️ Как оплатить доставку?", callback_data="info")],
         [InlineKeyboardButton(text="📍  Найти пункт выдачи поблизости", callback_data="support")]
     ]
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
+
 
 def get_app_keyboard():
     buttons = [
@@ -22,6 +24,15 @@ def get_app_keyboard():
         [InlineKeyboardButton(text="Google Play", url="https://play.google.com/store/apps/details?id=ru.ozon.app.android")],
         [InlineKeyboardButton(text="AppGallery", url="https://appgallery.huawei.com/#/app/C100847609")],
         [InlineKeyboardButton(text="RuStore", url="https://apps.rustore.ru/app/ru.ozon.app.android")]
+    ]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
+
+def get_pay_keyboard():
+    buttons = [
+        [InlineKeyboardButton(text="Привязать банковскую карту", callback_data="set_bank_card")],
+        [InlineKeyboardButton(text="СПБ", callback_data= "set_sbp_card")],
+        [InlineKeyboardButton(text="По карте Озон Банка", callback_data="set_ozon_bank_card")],
     ]
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard

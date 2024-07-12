@@ -10,14 +10,13 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeybo
 from callback_handler import callback_router
 
 load_dotenv()
-# Замените 'YOUR_BOT_TOKEN' на токен вашего бота
+
 BOT_TOKEN = os.getenv('API_KEY')
 
 
-# Настройка логирования
 logging.basicConfig(level=logging.INFO)
 
-# Инициализация бота и диспетчера
+
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 dp.include_router(callback_router)
@@ -43,7 +42,6 @@ async def delete_webhook():
 async def main():
     # Удаляем вебхук перед запуском бота
     await delete_webhook()
-    
     # Запускаем бота
     try:
         await dp.start_polling(bot)
