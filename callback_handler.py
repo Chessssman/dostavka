@@ -5,6 +5,7 @@ from keyboard import get_app_keyboard
 from keyboard import get_pay_keyboard
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.utils.markdown import hbold
 
 # Создаем роутер для callback query
 callback_router = Router()
@@ -12,15 +13,33 @@ callback_router = Router()
 @callback_router.callback_query()
 async def process_callback(callback: CallbackQuery):
     if callback.data == "get_product":
+        app_links = [
+            ("App Store", "https://apps.apple.com/us/app/%D0%BE%D0%B7%D0%BE%D0%BD-%D0%BE%D0%BD%D0%BB%D0%B0%D0%B9%D0%BD-%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D0%BD%D0%B5%D1%82-%D0%BC%D0%B0%D0%B3%D0%B0%D0%B7%D0%B8%D0%BD/id407804998"),
+            ("Google Play", "https://play.google.com/store/apps/details?id=ru.ozon.app.android"),
+            ("AppGallery", "https://appgallery.huawei.com/#/app/C100847609"),
+            ("RuStore", "https://apps.rustore.ru/app/ru.ozon.app.android")
+        ]
+        
+        app_links_text = "\n".join(f"<a href='{link}'>{name}</a>" for name, link in app_links)
+        
         await callback.message.answer(
-    "Чтобы начать пользоваться бесплатной доставкой, скачайте <b>приложение</b>.\n"
-    "<a href='https://apps.apple.com/us/app/%D0%BE%D0%B7%D0%BE%D0%BD-%D0%BE%D0%BD%D0%BB%D0%B0%D0%B9%D0%BD-%D0%B8%D0%BD%D1%82%D0%B5%D1%80%D0%BD%D0%B5%D1%82-%D0%BC%D0%B0%D0%B3%D0%B0%D0%B7%D0%B8%D0%BD/id407804998'>App Store</a>\n"
-    "<a href='https://play.google.com/store/apps/details?id=ru.ozon.app.android'>Google Play</a>\n"
-    "<a href='https://appgallery.huawei.com/#/app/C100847609'>AppGallery</a>\n"
-    "<a href='https://apps.rustore.ru/app/ru.ozon.app.android'>RuStore</a>\n",
-    parse_mode="HTML",
-    reply_markup= get_app_keyboard()
-)
+            f"Чтобы начать пользоваться бесплатной доставкой, скачайте {hbold('приложение')}.\n\n"
+            f"{app_links_text}",
+            parse_mode="HTML"
+        )
+
+        instructions = [
+            "Найдите пункт выдачи поблизости к вам, у нас для этого есть команда:",
+            "📍  Найти пункт выдачи поблизости",
+            "Добавьте понравившийся пункт выдачи в приложение Ozon, перейдя по предложенной ссылке",
+            "Оформите заказ, дальше приложение само вам подскажет, когда стоит приходить за выбранным товаром!"
+        ]
+
+        await callback.message.answer(
+            "\n\n".join(instructions),
+            parse_mode="HTML",
+            reply_markup=get_app_keyboard()
+        )
 
     elif callback.data == "info":
         await callback.message.answer(
@@ -62,6 +81,10 @@ async def process_callback(callback: CallbackQuery):
     elif callback.data == "find_pickup":
         await callback.message.answer(
             "Пришлите своё текущее местоположение, чтобы увидеть пункты выдачи по близости!"
+        )
+    elif callback.data == "open_main":
+        await callback.message.answer(
+
         )
         
     else:

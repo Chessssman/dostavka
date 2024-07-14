@@ -36,6 +36,17 @@ async def cmd_start(message: types.Message):
         "<a href='https://www.ozon.ru/'>топового маркетплейса РФ</a>.", reply_markup= get_start_keyboard(),
         parse_mode="HTML")
 
+@dp.callback_query(lambda c: c.data == "open_main")
+async def process_open_main(callback: types.CallbackQuery):
+    await callback.answer()  # Отвечаем на callback, чтобы убрать "часики" у кнопки
+    # Вызываем ту же логику, что и в cmd_start, но для callback
+    await callback.message.answer("Обновляем интерфейс...", reply_markup=ReplyKeyboardRemove())
+    await callback.message.answer(
+        "Приветствую! Я бот +7Доставки. Расскажу, как бесплатно получать товары с "
+        "<a href='https://www.ozon.ru/'>топового маркетплейса РФ</a>.",
+        reply_markup=get_start_keyboard(),
+        parse_mode="HTML"
+    )
 
 # Функция для удаления вебхука
 async def delete_webhook():
