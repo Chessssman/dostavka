@@ -52,9 +52,10 @@ def get_nearby_locations(user_location, max_distance_km=2):
         location = (row['широта'], row['долгота'])
         distance = geodesic(user_location, location).kilometers
         if distance <= max_distance_km:
-            nearby_locations.append((row['адрес'], distance))
+            nearby_locations.append((row['адрес'], distance, row['ссылка'], row['широта'], row['долгота']))
     
     return sorted(nearby_locations, key=lambda x: x[1])
+
 
 @router.message(F.content_type == ContentType.LOCATION)
 async def handle_location(message: Message):
@@ -62,13 +63,16 @@ async def handle_location(message: Message):
     nearby_locations = get_nearby_locations(user_location)
 
     if nearby_locations:
-        response = "Вот ближайшие к вам пункты выдачи:\n"
-        for address, distance in nearby_locations:
-            response += f"{address} - {distance:.2f} км\n"
+        response = "<b>Вот ближайшие к вам пункты выдачи:</b>\n\n"
+        for address, distance, link, lat, lon in nearby_locations:
+            yandex_maps_url = f"https://yandex.ru/maps/?ll={lon},{lat}&z=16&mode=search&text={address}"
+            response += f"📍 <b>{address}</b> - {distance:.2f} км\n"
+            response += f"🔗 <a href='{link}'>Добавить пункт выдачи в Ozon</a>\n"
+            response += f"🗺️ <a href='{yandex_maps_url}'>Открыть в Яндекс.Картах</a>\n\n"
     else:
         response = "К сожалению, в радиусе 2 км нет точек."
 
-    await message.reply(response)
+    await message.reply(response, parse_mode="HTML")
 
 dp.include_router(router)
 
