@@ -12,6 +12,7 @@ from callback_handler import callback_router
 import pandas as pd
 from geopy.distance import geodesic
 from aiogram import Router, F
+import keep_alive
 
 
 
@@ -98,4 +99,5 @@ async def main():
         logging.error(f"Ошибка при запуске бота: {e}")
 
 if __name__ == "__main__":
+    keep_alive.keep_alive()
     asyncio.run(main())
