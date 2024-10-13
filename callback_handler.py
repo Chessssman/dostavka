@@ -3,6 +3,7 @@ from aiogram.types import CallbackQuery
 from keyboard import get_start_keyboard  # Импортируйте другие необходимые функции
 from keyboard import get_app_keyboard
 from keyboard import get_pay_keyboard
+from keyboard import get_location_keyboard
 from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.markdown import hbold
@@ -80,13 +81,16 @@ async def process_callback(callback: CallbackQuery):
     
     elif callback.data == "find_pickup":
         await callback.message.answer(
-            "Пришлите своё текущее местоположение, чтобы увидеть пункты выдачи по близости!"
+            "Пришлите своё текущее местоположение, чтобы увидеть пункты выдачи по близости!\n"
+            "Убедитесь, что у вас включена функция 'Геолокации' на устройстве",
+            reply_markup=types.ReplyKeyboardMarkup(
+                keyboard=[[types.KeyboardButton(text="Отправить геопозицию", request_location=True)]],
+                resize_keyboard=True,
+                one_time_keyboard=True
+            )
         )
-    elif callback.data == "open_main":
-        await callback.message.answer(
 
-        )
-        
+
     else:
         await callback.answer("Неизвестная команда")
     

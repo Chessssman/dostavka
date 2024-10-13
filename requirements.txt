@@ -1,0 +1,6 @@
+aiogram
+geopy
+pandas
+openpyxl
+python-dotenv
+

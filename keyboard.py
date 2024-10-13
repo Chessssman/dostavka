@@ -38,3 +38,10 @@ def get_pay_keyboard():
     ]
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
+
+def get_location_keyboard():
+    buttons = [
+        [InlineKeyboardButton(text="Отправить геопозицию", callback_data="send_geo")],
+    ]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
