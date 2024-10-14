@@ -112,7 +112,7 @@ def get_nearby_locations(user_location, max_distance_km=2):
 
 
 # Обработка локации пользователя
-@dp.message(F.content_type == ContentType.LOCATION)
+@router.message(F.content_type == ContentType.LOCATION)
 async def handle_location(message: Message):
     user_location = (message.location.latitude, message.location.longitude)
     nearby_locations = get_nearby_locations(user_location)
