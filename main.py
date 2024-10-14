@@ -61,14 +61,14 @@ async def process_open_main(callback: types.CallbackQuery):
 
 
 # Callback для вызова техподдержки
-@router.callback_query(lambda c: c.data == "support")
+@dp.callback_query(lambda c: c.data == "support")
 async def support_start(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.answer("🛠 Пожалуйста, опишите вашу проблему или задайте вопрос.")
     await state.set_state(SupportState.waiting_for_question)  # Устанавливаем состояние ожидания вопроса
 
 
 # Обработка вопроса от пользователя
-@router.message(SupportState.waiting_for_question)
+@dp.message(SupportState.waiting_for_question)
 async def handle_question(message: types.Message, state: FSMContext, bot: Bot):
     user_question = message.text
 
@@ -86,7 +86,7 @@ async def handle_question(message: types.Message, state: FSMContext, bot: Bot):
 
 
 # Обработка ответа от техподдержки
-@router.message(F.chat.id == SUPPORT_CHAT_ID)
+@dp.message(F.chat.id == SUPPORT_CHAT_ID)
 async def forward_answer_from_support(message: types.Message, bot: Bot):
     if message.reply_to_message:
         # Извлекаем ID пользователя
