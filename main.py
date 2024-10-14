@@ -61,7 +61,7 @@ async def process_open_main(callback: types.CallbackQuery):
 
 
 # Callback для вызова техподдержки
-@router.callback_query(F.data == "support")
+@router.callback_query(lambda c: c.data == "support")
 async def support_start(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.answer("🛠 Пожалуйста, опишите вашу проблему или задайте вопрос.")
     await state.set_state(SupportState.waiting_for_question)  # Устанавливаем состояние ожидания вопроса
