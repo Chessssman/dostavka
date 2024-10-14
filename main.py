@@ -122,7 +122,7 @@ def get_nearby_locations(user_location, max_distance_km=2):
     return sorted(nearby_locations, key=lambda x: x[1])
 
 
-@router.message(F.location)
+@dp.message(F.content_type == ContentType.LOCATION)
 async def handle_location(message: Message):
     logging.info(f"Получена геопозиция: {message.location.latitude}, {message.location.longitude}")
     user_location = (message.location.latitude, message.location.longitude)
@@ -142,7 +142,7 @@ async def handle_location(message: Message):
 
 
 
-
+dp.include_router(router)
 
 
 # Функция запуска бота
@@ -152,7 +152,6 @@ async def main():
     # Запускаем бота
     try:
         await dp.start_polling(bot)
-        dp.include_router(router)
     except TelegramAPIError as e:
         logging.error(f"Ошибка при запуске бота: {e}")
 
