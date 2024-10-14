@@ -21,7 +21,9 @@ from aiohttp import TCPConnector
 
 load_dotenv()
 
+dp = Dispatcher()
 BOT_TOKEN = os.getenv('API_KEY')
+bot = Bot(token=BOT_TOKEN)
 PROXY_URL = "http://proxy.server:3128"
 SUPPORT_CHAT_ID = -1002296401929  # ID чата техподдержки (замените на реальный)
 
@@ -44,7 +46,7 @@ async def cmd_start(message: types.Message):
                          reply_markup=get_start_keyboard(), parse_mode="HTML")
 
 
-@router.callback_query(lambda c: c.data == "open_main")
+@dp.callback_query(lambda c: c.data == "open_main")
 async def process_open_main(callback: types.CallbackQuery):
     await callback.answer()  # Отвечаем на callback, чтобы убрать "часики" у кнопки
     await callback.message.answer("Обновляем интерфейс...", reply_markup=ReplyKeyboardRemove())
@@ -57,14 +59,14 @@ async def process_open_main(callback: types.CallbackQuery):
 
 
 # Callback для вызова техподдержки
-@router.callback_query(lambda c: c.data == "support")
+@dp.callback_query(lambda c: c.data == "support")
 async def support_start(callback: types.CallbackQuery, state: FSMContext):
     await callback.message.answer("🛠 Пожалуйста, опишите вашу проблему или задайте вопрос.")
     await state.set_state(SupportState.waiting_for_question)
 
 
 # Обработка вопроса от пользователя
-@router.message(SupportState.waiting_for_question)
+@dp.message(SupportState.waiting_for_question)
 async def handle_question(message: types.Message, state: FSMContext, bot: Bot):
     user_question = message.text
 
@@ -79,7 +81,7 @@ async def handle_question(message: types.Message, state: FSMContext, bot: Bot):
 
 
 # Обработка ответа от техподдержки
-@router.message(F.chat.id == SUPPORT_CHAT_ID)
+@dp.message(F.chat.id == SUPPORT_CHAT_ID)
 async def forward_answer_from_support(message: types.Message, bot: Bot):
     if message.reply_to_message:
         question_info = message.reply_to_message.text.split('\n')[0]
@@ -110,7 +112,7 @@ def get_nearby_locations(user_location, max_distance_km=2):
 
 
 # Обработка локации пользователя
-@router.message(F.content_type == ContentType.LOCATION)
+@dp.message(F.content_type == ContentType.LOCATION)
 async def handle_location(message: Message):
     user_location = (message.location.latitude, message.location.longitude)
     nearby_locations = get_nearby_locations(user_location)
@@ -135,8 +137,7 @@ async def main():
     ssl_context.verify_mode = ssl.CERT_NONE
     connector = TCPConnector(ssl=ssl_context)
 
-    bot = Bot(token=BOT_TOKEN, request_kwargs={'connector': connector}, skip_cert_verification=True)
-    dp = Dispatcher()
+
     dp.include_router(callback_router)
     dp.include_router(support_router)
     dp.include_router(router)
