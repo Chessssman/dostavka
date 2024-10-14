@@ -1,7 +1,9 @@
-aiogram
-geopy
-pandas
+aiogram~=3.13.1
+geopy~=2.4.1
+pandas~=2.2.3
 openpyxl
-python-dotenv
-flask
+python-dotenv~=1.0.1
+flask~=3.0.3
 
+
+aiohttp~=3.10.10
