@@ -8,6 +8,7 @@ from aiogram import types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from aiogram.utils.markdown import hbold
 
+
 # Создаем роутер для callback query
 callback_router = Router()
 
