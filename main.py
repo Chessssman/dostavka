@@ -32,6 +32,13 @@ logging.basicConfig(level=logging.INFO)
 df = pd.read_excel('map.xlsx')
 router = Router()
 
+<<<<<<< HEAD
+=======
+# ID чата техподдержки (замените на реальный)
+SUPPORT_CHAT_ID = -2296401929
+
+
+>>>>>>> parent of e32baf3 (update chat id)
 # Состояния для FSM
 class SupportState(StatesGroup):
     waiting_for_question = State()
