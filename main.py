@@ -15,6 +15,7 @@ from aiogram import Router, F
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import keep_alive
+from support_handler import callback_router as support_router
 
 load_dotenv()
 
@@ -25,6 +26,7 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 dp.include_router(callback_router)
+dp.include_router(support_router)
 df = pd.read_excel('map.xlsx')
 router = Router()
 
