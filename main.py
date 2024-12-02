@@ -112,14 +112,18 @@ async def delete_webhook():
 # Функция поиска ближайших пунктов
 def get_nearby_locations(user_location, max_distance_km=4):
     nearby_locations = []
+    priority_location = "Донецк, пл. Конституции, д.4"
 
     for index, row in df.iterrows():
         location = (row['широта'], row['долгота'])
         distance = geodesic(user_location, location).kilometers
         if distance <= max_distance_km:
-            nearby_locations.append((row['адрес'], distance, row['ссылка'], row['широта'], row['долгота']))
+            # Добавляем флаг приоритетности
+            is_priority = row['адрес'] == priority_location
+            nearby_locations.append((row['адрес'], distance, row['ссылка'], row['широта'], row['долгота'], is_priority))
 
-    return sorted(nearby_locations, key=lambda x: x[1])
+    # Сортируем с приоритетным местоположением первым
+    return sorted(nearby_locations, key=lambda x: (not x[5], x[1]))
 
 
 @dp.message(F.content_type == ContentType.LOCATION)
@@ -130,8 +134,13 @@ async def handle_location(message: Message):
 
     if nearby_locations:
         response = "<b>Вот ближайшие к вам пункты выдачи:</b>\n\n"
-        for address, distance, link, lat, lon in nearby_locations:
+        for address, distance, link, lat, lon, is_priority in nearby_locations:
             yandex_maps_url = f"https://yandex.ru/maps/?ll={lon},{lat}&z=16&mode=search&text={address}"
+
+            # Выделяем приоритетный пункт
+            if is_priority:
+                response += "🌟 <b>ПРИОРИТЕТНЫЙ ПУНКТ:</b>\n"
+
             response += f"📍 <b>{address}</b> - {distance:.2f} км\n"
             response += f"🔗 <a href='{link}'>Добавить пункт выдачи в Ozon</a>\n"
             response += f"🗺️ <a href='{yandex_maps_url}'>Открыть в Яндекс.Картах</a>\n\n"
