@@ -110,7 +110,7 @@ async def delete_webhook():
 
 
 # Функция поиска ближайших пунктов
-def get_nearby_locations(user_location, max_distance_km=4):
+def get_nearby_locations(user_location, max_distance_km=2):
     nearby_locations = []
     priority_location = "Донецк, пл. Конституции, д.4"
 
@@ -139,7 +139,7 @@ async def handle_location(message: Message):
 
             # Выделяем приоритетный пункт
             if is_priority:
-                response += "🌟 <b>ПРИОРИТЕТНЫЙ ПУНКТ:</b>\n"
+                response += "🌟 <b>Новый пункт выдачи:</b>\n"
 
             response += f"📍 <b>{address}</b> - {distance:.2f} км\n"
             response += f"🔗 <a href='{link}'>Добавить пункт выдачи в Ozon</a>\n"
