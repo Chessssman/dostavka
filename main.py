@@ -110,7 +110,7 @@ async def delete_webhook():
 
 
 # Функция поиска ближайших пунктов
-def get_nearby_locations(user_location, max_distance_km=2):
+def get_nearby_locations(user_location, max_distance_km=4):
     nearby_locations = []
 
     for index, row in df.iterrows():
