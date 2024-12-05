@@ -137,10 +137,6 @@ async def handle_location(message: Message):
         for address, distance, link, lat, lon, is_priority in nearby_locations:
             yandex_maps_url = f"https://yandex.ru/maps/?ll={lon},{lat}&z=16&mode=search&text={address}"
 
-            # Выделяем приоритетный пункт
-            if is_priority:
-                response += "🌟 <b>Новый пункт выдачи:</b>\n"
-
             response += f"📍 <b>{address}</b> - {distance:.2f} км\n"
             response += f"🔗 <a href='{link}'>Добавить пункт выдачи в Ozon</a>\n"
             response += f"🗺️ <a href='{yandex_maps_url}'>Открыть в Яндекс.Картах</a>\n\n"
