@@ -12,6 +12,7 @@ def get_start_keyboard():
     buttons = [
         [InlineKeyboardButton(text="📦 Как пользоваться доставкой?", callback_data="get_product")],
         [InlineKeyboardButton(text="ℹ️ Как оплатить доставку?", callback_data="info")],
+        [InlineKeyboardButton(text="Как стать нашим партнером?",callback_data="partner_info")],
         [InlineKeyboardButton(text="📍  Найти пункт выдачи поблизости", callback_data="find_pickup")],
         [InlineKeyboardButton(text="?  Обратиться в поддержку", callback_data="support")]
     ]
@@ -46,3 +47,8 @@ def get_location_keyboard():
     ]
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
+
+def get_partner_keyboard():
+    buttons = [
+        InlineKeyboardButton(text="Подать заявку?", callback_data ="submit_application")
+    ]

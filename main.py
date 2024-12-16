@@ -6,7 +6,7 @@ from aiogram.types import ContentType, Message
 from aiogram.filters.command import Command
 from aiogram.exceptions import TelegramAPIError
 from dotenv import load_dotenv
-from keyboard import get_start_keyboard
+from keyboard import get_start_keyboard, get_partner_keyboard
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardRemove
 from callback_handler import callback_router
 import pandas as pd
@@ -32,11 +32,15 @@ router = Router()
 
 # ID чата техподдержки (замените на реальный)
 SUPPORT_CHAT_ID = -1002296401929
+PARTNER_CHAT_ID = -4767505087  # ID чата для заявок
 
 
 # Состояния для FSM
-class SupportState(StatesGroup):
-    waiting_for_question = State()
+class PartnerApplicationState(StatesGroup):
+    waiting_for_full_name = State()
+    waiting_for_phone = State()
+    waiting_for_address = State()
+    waiting_for_photos = State()
 
 
 # Обработчик команды /start
@@ -60,91 +64,77 @@ async def process_open_main(callback: types.CallbackQuery):
     )
 
 
-# Callback для вызова техподдержки
-@dp.callback_query(lambda c: c.data == "support")
-async def support_start(callback: types.CallbackQuery, state: FSMContext):
-    await callback.message.answer("🛠 Пожалуйста, опишите вашу проблему или задайте вопрос.")
-    await state.set_state(SupportState.waiting_for_question)  # Устанавливаем состояние ожидания вопроса
-
-
-# Обработка вопроса от пользователя
-@dp.message(SupportState.waiting_for_question)
-async def handle_question(message: types.Message, state: FSMContext, bot: Bot):
-    user_question = message.text
-
-    # Пересылаем вопрос в чат техподдержки
-    forward_message = await bot.send_message(
-        SUPPORT_CHAT_ID,
-        f"🔔 Вопрос от пользователя @{message.from_user.username} (ID: {message.from_user.id}):\n{user_question}"
+# Обработчик кнопки "Как стать партнером?"
+@dp.callback_query(lambda c: c.data == "partner_info")
+async def partner_info(callback: types.CallbackQuery):
+    info_text = (
+        "Компания +7Доставка активно развивает партнерскую сеть Пунктов выдачи заказов на новых территориях и в Крыму.\n\n"
+        "Мы готовы рассмотреть Вас как потенциального партнера, если:\n"
+        "- У вас есть помещение с большой проходимостью\n"
+        "- Вы готовы применить наш брендбук для большей узнаваемости в городе\n"
+        "- Имеете представление о работе Пункта Выдачи\n"
+        "- Есть желание повышать узнаваемость совместно с нами\n\n"
+        "Наши минимальные требования:\n"
+        "- Площадь помещения от 30 кв. м\n"
+        "- Первый этаж, удобный заход\n"
+        "- Наличие рабочего места с ПК, интернета, стеллажей для склада посылок\n"
+        "- Аккуратность в работе\n"
+        "- Содержание пункта выдачи в чистоте и порядке\n\n"
+        "Если вы подходите, нажмите на кнопку \"Подать заявку\" ниже."
     )
-
-    # Сохраняем данные для ответа
-    await state.update_data(user_chat_id=message.chat.id, support_message_id=forward_message.message_id)
-
-    await message.answer("✅ Ваш вопрос отправлен в службу поддержки. Ожидайте ответа.")
-    await state.clear()  # Очищаем состояние
+    await callback.message.answer(info_text, reply_markup=get_partner_keyboard(), parse_mode="HTML")
 
 
-# Обработка ответа от техподдержки
-@dp.message(F.chat.id == SUPPORT_CHAT_ID)
-async def forward_answer_from_support(message: types.Message, bot: Bot):
-    if message.reply_to_message:
-        # Извлекаем ID пользователя
-        question_info = message.reply_to_message.text.split('\n')[0]
-        user_id = int(question_info.split('(ID: ')[1].replace('):', ''))
-
-        # Пересылаем ответ пользователю
-        await bot.send_message(
-            user_id,
-            f"💬 Ответ от службы поддержки:\n{message.text}"
-        )
+# Начало подачи заявки
+@dp.callback_query(lambda c: c.data == "submit_application")
+async def start_application(callback: types.CallbackQuery, state: FSMContext):
+    await callback.message.answer("Пожалуйста, укажите ваше ФИО.")
+    await state.set_state(PartnerApplicationState.waiting_for_full_name)
 
 
-# Функция для удаления вебхука
-async def delete_webhook():
-    try:
-        await bot.delete_webhook()
-        logging.info("Вебхук успешно удален")
-    except TelegramAPIError as e:
-        logging.error(f"Ошибка при удалении вебхука: {e}")
+# Сбор данных заявки
+@dp.message(PartnerApplicationState.waiting_for_full_name)
+async def get_full_name(message: types.Message, state: FSMContext):
+    await state.update_data(full_name=message.text)
+    await message.answer("Спасибо! Теперь укажите ваш номер телефона.")
+    await state.set_state(PartnerApplicationState.waiting_for_phone)
 
 
-# Функция поиска ближайших пунктов
-def get_nearby_locations(user_location, max_distance_km=2):
-    nearby_locations = []
-    priority_location = "Донецк, пл. Конституции, д.4"
-
-    for index, row in df.iterrows():
-        location = (row['широта'], row['долгота'])
-        distance = geodesic(user_location, location).kilometers
-        if distance <= max_distance_km:
-            # Добавляем флаг приоритетности
-            is_priority = row['адрес'] == priority_location
-            nearby_locations.append((row['адрес'], distance, row['ссылка'], row['широта'], row['долгота'], is_priority))
-
-    # Сортируем с приоритетным местоположением первым
-    return sorted(nearby_locations, key=lambda x: (not x[5], x[1]))
+@dp.message(PartnerApplicationState.waiting_for_phone)
+async def get_phone(message: types.Message, state: FSMContext):
+    await state.update_data(phone=message.text)
+    await message.answer("Отлично! Укажите адрес вашего помещения.")
+    await state.set_state(PartnerApplicationState.waiting_for_address)
 
 
-@dp.message(F.content_type == ContentType.LOCATION)
-async def handle_location(message: Message):
-    logging.info(f"Получена геопозиция: {message.location.latitude}, {message.location.longitude}")
-    user_location = (message.location.latitude, message.location.longitude)
-    nearby_locations = get_nearby_locations(user_location)
+@dp.message(PartnerApplicationState.waiting_for_address)
+async def get_address(message: types.Message, state: FSMContext):
+    await state.update_data(address=message.text)
+    await message.answer("Почти готово! Пожалуйста, отправьте фото или видео помещения (включая фасад).")
+    await state.set_state(PartnerApplicationState.waiting_for_photos)
 
-    if nearby_locations:
-        response = "<b>Вот ближайшие к вам пункты выдачи:</b>\n\n"
-        for address, distance, link, lat, lon, is_priority in nearby_locations:
-            yandex_maps_url = f"https://yandex.ru/maps/?ll={lon},{lat}&z=16&mode=search&text={address}"
 
-            response += f"📍 <b>{address}</b> - {distance:.2f} км\n"
-            response += f"🔗 <a href='{link}'>Добавить пункт выдачи в Ozon</a>\n"
-            response += f"🗺️ <a href='{yandex_maps_url}'>Открыть в Яндекс.Картах</a>\n\n"
-    else:
-        response = "К сожалению, в радиусе 2 км нет точек."
+@dp.message(PartnerApplicationState.waiting_for_photos, content_types=[ContentType.PHOTO, ContentType.VIDEO])
+async def get_photos(message: types.Message, state: FSMContext):
+    data = await state.get_data()
 
-    await message.reply(response, parse_mode="HTML")
+    # Отправка данных в чат
+    application_text = (
+        f"Новая заявка от потенциального партнера:\n"
+        f"ФИО: {data['full_name']}\n"
+        f"Телефон: {data['phone']}\n"
+        f"Адрес помещения: {data['address']}\n"
+    )
+    await bot.send_message(PARTNER_CHAT_ID, application_text)
 
+    # Пересылка медиа
+    if message.photo:
+        await message.photo[-1].send_to(PARTNER_CHAT_ID)
+    elif message.video:
+        await message.video.send_to(PARTNER_CHAT_ID)
+
+    await message.answer("Спасибо! Ваша заявка отправлена. Мы свяжемся с вами в ближайшее время.")
+    await state.clear()
 
 
 dp.include_router(router)
@@ -153,7 +143,12 @@ dp.include_router(router)
 # Функция запуска бота
 async def main():
     # Удаляем вебхук перед запуском бота
-    await delete_webhook()
+    try:
+        await bot.delete_webhook()
+        logging.info("Вебхук успешно удален")
+    except TelegramAPIError as e:
+        logging.error(f"Ошибка при удалении вебхука: {e}")
+
     # Запускаем бота
     try:
         await dp.start_polling(bot)
