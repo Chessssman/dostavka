@@ -114,7 +114,7 @@ async def get_address(message: types.Message, state: FSMContext):
     await state.set_state(PartnerApplicationState.waiting_for_photos)
 
 
-@dp.message(PartnerApplicationState.waiting_for_photos, content_types=[ContentType.PHOTO, ContentType.VIDEO])
+@dp.message(PartnerApplicationState.waiting_for_photos)
 async def get_photos(message: types.Message, state: FSMContext):
     data = await state.get_data()
 
@@ -129,13 +129,12 @@ async def get_photos(message: types.Message, state: FSMContext):
 
     # Пересылка медиа
     if message.photo:
-        await message.photo[-1].send_to(PARTNER_CHAT_ID)
+        await bot.send_photo(PARTNER_CHAT_ID, photo=message.photo[-1].file_id)
     elif message.video:
-        await message.video.send_to(PARTNER_CHAT_ID)
+        await bot.send_video(PARTNER_CHAT_ID, video=message.video.file_id)
 
     await message.answer("Спасибо! Ваша заявка отправлена. Мы свяжемся с вами в ближайшее время.")
     await state.clear()
-
 
 dp.include_router(router)
 
