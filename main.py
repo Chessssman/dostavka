@@ -27,9 +27,9 @@ logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+dp.include_router(partner_router)
 dp.include_router(callback_router)
 dp.include_router(support_router)
-dp.include_router(partner_router)
 df = pd.read_excel('map.xlsx')
 router = Router()
 

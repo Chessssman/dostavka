@@ -90,3 +90,16 @@ async def get_photos(message: types.Message, state: FSMContext):
 
     await message.answer("Спасибо! Ваша заявка отправлена. Мы свяжемся с вами в ближайшее время.")
     await state.clear()
+
+# Обработчик пересылки ответа из чата партнёров пользователю
+@partner_router.message()
+async def forward_partner_response(message: types.Message):
+    if message.chat.id == PARTNER_CHAT_ID:  # Замените на реальный ID чата с партнёрами
+        # Здесь предполагается, что в первом сообщении будет ID пользователя
+        parts = message.text.split("\n", 1)
+        if len(parts) == 2:
+            user_id = int(parts[0])
+            partner_response = parts[1].strip()
+
+            # Отправляем ответ пользователю
+            await message.bot.send_message(user_id, f"Ответ на вашу заявку:\n\n{partner_response}")
