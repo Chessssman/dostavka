@@ -99,11 +99,29 @@ async def get_photos(message: types.Message, state: FSMContext):
 @partner_router.message()
 async def forward_partner_response(message: types.Message):
     if message.chat.id == PARTNER_CHAT_ID:  # Замените на реальный ID чата с партнёрами
-        # Здесь предполагается, что в первом сообщении будет ID пользователя
+        # Проверка типа медиафайла и отправка соответствующего
         parts = message.text.split("\n", 1)
         if len(parts) == 2:
             user_id = int(parts[0])
             partner_response = parts[1].strip()
 
-            # Отправляем ответ пользователю
+            # Отправляем текстовое сообщение пользователю
             await message.bot.send_message(user_id, f"Ответ на вашу заявку:\n\n{partner_response}")
+
+            # Пересылка всех фото (если есть)
+            if message.photo:
+                for photo in message.photo:
+                    await message.bot.send_photo(user_id, photo=photo.file_id)
+
+            # Пересылка всех видео (если есть)
+            elif message.video:
+                await message.bot.send_video(user_id, video=message.video.file_id)
+
+            # Пересылка всех документов (если есть)
+            elif message.document:
+                await message.bot.send_document(user_id, document=message.document.file_id)
+
+            # Пересылка всех аудио (если есть)
+            elif message.audio:
+                await message.bot.send_audio(user_id, audio=message.audio.file_id)
+
