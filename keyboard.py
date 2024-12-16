@@ -50,5 +50,7 @@ def get_location_keyboard():
 
 def get_partner_keyboard():
     buttons = [
-        InlineKeyboardButton(text="Подать заявку?", callback_data ="submit_application")
+        [InlineKeyboardButton(text="Подать заявку?", callback_data ="submit_application")],
     ]
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
