@@ -87,6 +87,10 @@ async def get_photos(message: types.Message, state: FSMContext):
         await message.bot.send_photo(PARTNER_CHAT_ID, photo=message.photo[-1].file_id)
     elif message.video:
         await message.bot.send_video(PARTNER_CHAT_ID, video=message.video.file_id)
+    elif message.document:
+        await message.bot.send_document(PARTNER_CHAT_ID, document=message.document.file_id)
+    elif message.audio:
+        await message.bot.send_audio(PARTNER_CHAT_ID, audio=message.audio.file_id)
 
     await message.answer("Спасибо! Ваша заявка отправлена. Мы свяжемся с вами в ближайшее время.")
     await state.clear()
