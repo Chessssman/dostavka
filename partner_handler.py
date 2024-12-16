@@ -4,8 +4,10 @@ from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import logging
 
+
 # ID чата для получения заявок
 PARTNER_CHAT_ID = -4767505087  # Замените на реальный ID
+LOGGING_CHAT_ID = 521620770  # Новый ID для логирования
 
 # Создаем роутер для обработки заявок партнёров
 partner_router = Router()
@@ -43,6 +45,10 @@ async def partner_info(callback: types.CallbackQuery):
         "Если вы подходите, нажмите на кнопку \"Подать заявку\" ниже."
     )
     await callback.message.answer(info_text, reply_markup=get_partner_keyboard(), parse_mode="HTML")
+
+    # Логирование на случай, если кто-то нажал на кнопку партнерки
+    logging.info(f"User {callback.from_user.id} clicked on the 'Как стать партнером?' button.")
+    await callback.bot.send_message(LOGGING_CHAT_ID,f"User {callback.from_user.id} clicked on the 'Как стать партнером?' button.")
 
 # Начало подачи заявки
 @partner_router.callback_query(lambda c: c.data == "submit_application")
