@@ -48,9 +48,3 @@ def get_location_keyboard():
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     return keyboard
 
-def skip_keyboard():
-    buttons = [
-        [InlineKeyboardButton(text="Пропустить", callback_data="skip_photos")],
-    ]
-    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
-    return keyboard

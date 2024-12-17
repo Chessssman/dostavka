@@ -70,6 +70,15 @@ async def get_phone(message: types.Message, state: FSMContext):
     await message.answer("Отлично! Укажите адрес вашего помещения.")
     await state.set_state(PartnerApplicationState.waiting_for_address)
 
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+# Клавиатура для пропуска отправки фото
+skip_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Пропустить", callback_data="skip_photos")]
+    ]
+)
+
 # Запрос фото или видео с Inline-кнопкой "Пропустить"
 @partner_router.message(PartnerApplicationState.waiting_for_address)
 async def get_address(message: types.Message, state: FSMContext):
