@@ -8,7 +8,7 @@ from aiogram import Router, F, Bot
 from aiogram.filters import StateFilter
 
 # ID чата для получения заявок
-PARTNER_CHAT_ID = -1002314519913  # Замените на реальный ID
+PARTNER_CHAT_ID = -4607056395  # Замените на реальный ID
 LOGGING_CHAT_ID = 521620770  # Новый ID для логирования
 YANDEX_API_KEY = "7df099aa-c180-4c44-b0cd-258a05bdc8f2"
 # Создаем роутер для обработки заявок партнёров
@@ -178,20 +178,32 @@ async def finalize_application(message: Message, state: FSMContext, bot: Bot):
 
 # Обработка нажатия кнопки "Пропустить"
 @partner_router.callback_query(lambda c: c.data == "skip_photos")
-async def skip_photos(callback: types.CallbackQuery, state: FSMContext):
-    data = await state.get_data()
+async def skip_photos(callback: CallbackQuery, state: FSMContext, bot: Bot):
+    user_data = await state.get_data()
+    region = user_data.get("region")
+    address_input = user_data.get("address")
+    address_found = user_data.get("address_found", "Не найдено")
+    map_link = user_data.get("map_link", "Нет данных")
 
-    # Текст заявки без медиа
-    application_text = (
-        f"Новая заявка от потенциального партнера:\n"
-        f"ФИО: {data['full_name']}\n"
-        f"Телефон: {data['phone']}\n"
-        f"Адрес помещения: {data['address']}\n"
-        f"Фото или видео не предоставлено."
+    # Формирование сообщения для поддержки
+    support_message = (
+        "🔔 <b>Новая заявка от партнёра</b>\n\n"
+        f"👤 <b>ФИО:</b> {user_data['full_name']}\n"
+        f"📞 <b>Телефон:</b> {user_data['phone']}\n"
+        f"📍 <b>Регион:</b> {region}\n"
+        f"🏠 <b>Адрес:</b> {address_input}\n"
+        f"🗺️ <b>Найденный адрес:</b> {address_found}\n"
+        f"🔗 <b>Ссылка на карту:</b> <a href='{map_link}'>Открыть в Яндекс.Картах</a>\n"
+        f"🖼️ <b>Фото или видео:</b> <i>Не предоставлено</i>"
     )
-    await callback.bot.send_message(PARTNER_CHAT_ID, application_text)
 
-    await callback.message.edit_text("Спасибо! Ваша заявка отправлена без фото или видео. Мы свяжемся с вами в ближайшее время.")
+    # Отправка данных в чат поддержки
+    await bot.send_message(PARTNER_CHAT_ID, support_message, parse_mode="HTML")
+
+    # Подтверждение пользователю
+    await callback.message.edit_text(
+        "✅ Ваша заявка отправлена без фото или видео. Мы свяжемся с вами в ближайшее время."
+    )
     await state.clear()
 
 # Обработчик пересылки ответа из чата партнёров пользователю
