@@ -32,6 +32,7 @@ skip_keyboard = InlineKeyboardMarkup(
 class PartnerApplicationState(StatesGroup):
     waiting_for_full_name = State()
     waiting_for_phone = State()
+    waiting_for_region = State()
     waiting_for_address = State()
     waiting_for_photos = State()
 
