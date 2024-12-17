@@ -2,7 +2,6 @@ from aiogram import Router, types
 from aiogram.types import ContentType, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
-from keyboard import skip_keyboard
 import logging
 
 
