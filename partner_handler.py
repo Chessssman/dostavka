@@ -1,9 +1,11 @@
 from aiogram import Router, types
-from aiogram.types import ContentType, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ContentType, InlineKeyboardMarkup, InlineKeyboardButton, InputMediaPhoto, InputMediaVideo, CallbackQuery, Message
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 import logging
 import requests
+from aiogram import Router, F, Bot
+from aiogram.filters import StateFilter
 
 # ID чата для получения заявок
 PARTNER_CHAT_ID = -1002314519913  # Замените на реальный ID
@@ -67,128 +69,111 @@ async def partner_info(callback: types.CallbackQuery):
     logging.info(f"User {callback.from_user.id} clicked on the 'Как стать партнером?' button.")
     await callback.bot.send_message(LOGGING_CHAT_ID,f"User {callback.from_user.id} clicked on the 'Как стать партнером?' button.")
 
-# Начало подачи заявки
-@partner_router.callback_query(lambda c: c.data == "submit_application")
-async def start_application(callback: types.CallbackQuery, state: FSMContext):
+
+# Функция поиска адреса через Яндекс.Карты
+def find_address_on_yandex(address):
+    url = "https://geocode-maps.yandex.ru/1.x/"
+    params = {"apikey": YANDEX_API_KEY, "geocode": address, "format": "json"}
+    response = requests.get(url, params=params)
+    if response.status_code == 200:
+        try:
+            geo_object = response.json()['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']
+            address_found = geo_object['metaDataProperty']['GeocoderMetaData']['text']
+            coordinates = geo_object['Point']['pos']
+            lon, lat = coordinates.split()
+            map_link = f"https://yandex.ru/maps/?ll={lon},{lat}&z=16"
+            return address_found, map_link
+        except (IndexError, KeyError):
+            return None, None
+    return None, None
+
+
+# Старт подачи заявки
+@partner_router.callback_query(F.data == "submit_application")
+async def start_application(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("Пожалуйста, укажите ваше ФИО.")
     await state.set_state(PartnerApplicationState.waiting_for_full_name)
 
-# Сбор данных заявки
-@partner_router.message(PartnerApplicationState.waiting_for_full_name)
-async def get_full_name(message: types.Message, state: FSMContext):
+
+# Получение ФИО
+@partner_router.message(StateFilter(PartnerApplicationState.waiting_for_full_name))
+async def get_full_name(message: Message, state: FSMContext):
     await state.update_data(full_name=message.text)
     await message.answer("Спасибо! Теперь укажите ваш номер телефона.")
     await state.set_state(PartnerApplicationState.waiting_for_phone)
 
 
-@partner_router.message(PartnerApplicationState.waiting_for_phone)
-async def get_phone(message: types.Message, state: FSMContext):
+# Получение телефона
+@partner_router.message(StateFilter(PartnerApplicationState.waiting_for_phone))
+async def get_phone(message: Message, state: FSMContext):
     await state.update_data(phone=message.text)
-    await message.answer("Выберите регион:", reply_markup=region_keyboard)
+    await message.answer("Выберите ваш регион:", reply_markup=region_keyboard)
     await state.set_state(PartnerApplicationState.waiting_for_region)
 
 
-# Получение региона и запрос адреса
-@partner_router.callback_query(PartnerApplicationState.waiting_for_region)
-async def get_region(callback: types.CallbackQuery, state: FSMContext):
-    region_mapping = {
-        "region_dnr": "ДНР",
-        "region_lnr": "ЛНР",
-        "region_kherson": "Херсонская область",
-        "region_zaporozh": "Запорожская область"
-    }
-    region = region_mapping.get(callback.data)
-    if not region:
-        await callback.message.answer("Произошла ошибка. Попробуйте ещё раз.")
-        return
-
+# Обработка выбора региона
+@partner_router.callback_query(StateFilter(PartnerApplicationState.waiting_for_region))
+async def get_region(callback: CallbackQuery, state: FSMContext):
+    region = callback.data.split("_")[1]
     await state.update_data(region=region)
-    await callback.message.answer("Отлично! Теперь укажите адрес вашего помещения.")
+    await callback.message.answer("Спасибо! Укажите адрес вашего помещения.")
     await state.set_state(PartnerApplicationState.waiting_for_address)
 
 
-# Поиск адреса через Яндекс.Карты
-def find_address_on_yandex(address):
-    url = "https://geocode-maps.yandex.ru/1.x/"
-    params = {
-        "apikey": YANDEX_API_KEY,
-        "geocode": address,
-        "format": "json"
-    }
-    response = requests.get(url, params=params)
-    if response.status_code == 200:
-        response_json = response.json()
-        try:
-            geo_object = response_json['response']['GeoObjectCollection']['featureMember'][0]['GeoObject']
-            address_found = geo_object['metaDataProperty']['GeocoderMetaData']['text']
-            coordinates = geo_object['Point']['pos']
-            return address_found, coordinates
-        except (IndexError, KeyError):
-            return None
-    return None
-
-
-# Получение адреса и вызов поиска
-@partner_router.message(PartnerApplicationState.waiting_for_address)
-async def get_address(message: types.Message, state: FSMContext):
+# Получение адреса
+@partner_router.message(StateFilter(PartnerApplicationState.waiting_for_address))
+async def get_address(message: Message, state: FSMContext):
     user_data = await state.get_data()
-    region = user_data.get("region", "")
-    full_address = f"{region}, {message.text}"
+    full_address = f"{user_data.get('region', '')}, {message.text}"
 
-    search_result = find_address_on_yandex(full_address)
-    if search_result:
-        address_found, coordinates = search_result
-        await state.update_data(address=address_found, coordinates=coordinates)
-        await message.answer(
-            f"Адрес найден: {address_found}\nКоординаты: {coordinates}.\n"
-            "Пожалуйста, отправьте фото или видео помещения (включая фасад).",
-            reply_markup=skip_keyboard
-        )
+    address_found, map_link = find_address_on_yandex(full_address)
+    if address_found:
+        await state.update_data(address=message.text, address_found=address_found, map_link=map_link)
     else:
-        await message.answer("Адрес не удалось найти на картах. Пожалуйста, проверьте его и отправьте ещё раз.")
-        return
+        await state.update_data(address=message.text, address_found="Адрес не найден", map_link="Нет данных")
 
+    await message.answer(
+        "Почти готово! Пожалуйста, отправьте фото или видео помещения (включая фасад). Если их нет, нажмите кнопку 'Пропустить'.",
+        reply_markup=skip_keyboard
+    )
     await state.set_state(PartnerApplicationState.waiting_for_photos)
 
-# Обработка отправки фото или видео
-@partner_router.message(PartnerApplicationState.waiting_for_photos)
-async def get_photos(message: types.Message, state: FSMContext):
-    data = await state.get_data()
 
-    # Текст заявки
-    application_text = (
-        f"Новая заявка от потенциального партнера:\n"
-        f"ФИО: {data['full_name']}\n"
-        f"Телефон: {data['phone']}\n"
-        f"Адрес помещения: {data['address']}\n"
+# Обработка фото/видео и отправка заявки
+@partner_router.message(StateFilter(PartnerApplicationState.waiting_for_photos),
+                        F.content_type.in_({"photo", "video", "text"}))
+async def finalize_application(message: Message, state: FSMContext, bot: Bot):
+    user_data = await state.get_data()
+    region = user_data.get("region")
+    address_input = user_data.get("address")
+    address_found = user_data.get("address_found", "Не найдено")
+    map_link = user_data.get("map_link", "Нет данных")
+
+    # Обработка фото или видео
+    media_group = []
+    if message.photo:
+        media_group.append(InputMediaPhoto(media=message.photo[-1].file_id, caption="Фото помещения"))
+    elif message.video:
+        media_group.append(InputMediaVideo(media=message.video.file_id, caption="Видео помещения"))
+
+    # Формирование сообщения для поддержки
+    support_message = (
+        "🔔 <b>Новая заявка от партнёра</b>\n\n"
+        f"👤 <b>ФИО:</b> {user_data['full_name']}\n"
+        f"📞 <b>Телефон:</b> {user_data['phone']}\n"
+        f"📍 <b>Регион:</b> {region}\n"
+        f"🏠 <b>Адрес:</b> {address_input}\n"
+        f"🗺️ <b>Найденный адрес:</b> {address_found}\n"
+        f"🔗 <b>Ссылка на карту:</b> <a href='{map_link}'>Открыть в Яндекс.Картах</a>\n"
     )
 
-    media_sent = False
-    if message.photo:
-        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
-        await message.bot.send_photo(PARTNER_CHAT_ID, photo=message.photo[-1].file_id)
-        media_sent = True
-    elif message.video:
-        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
-        await message.bot.send_video(PARTNER_CHAT_ID, video=message.video.file_id)
-        media_sent = True
-    elif message.document:
-        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
-        await message.bot.send_document(PARTNER_CHAT_ID, document=message.document.file_id)
-        media_sent = True
-    elif message.audio:
-        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
-        await message.bot.send_audio(PARTNER_CHAT_ID, audio=message.audio.file_id)
-        media_sent = True
+    # Отправка данных в чат поддержки
+    await bot.send_message(PARTNER_CHAT_ID, support_message, parse_mode="HTML")
+    if media_group:
+        await bot.send_media_group(PARTNER_CHAT_ID, media_group)
 
-    if not media_sent:
-        await message.answer(
-            "Файл не распознан. Если у вас нет фото или видео, нажмите кнопку 'Пропустить'.",
-            reply_markup=skip_keyboard
-        )
-        return
-
-    await message.answer("Спасибо! Ваша заявка отправлена. Мы свяжемся с вами в ближайшее время.")
+    # Подтверждение пользователю
+    await message.answer("✅ Ваша заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.")
     await state.clear()
 
 # Обработка нажатия кнопки "Пропустить"
