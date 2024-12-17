@@ -2,6 +2,7 @@ from aiogram import Router, types
 from aiogram.types import ContentType, InlineKeyboardMarkup, InlineKeyboardButton
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+from keyboard import skip_keyboard
 import logging
 
 
@@ -69,36 +70,74 @@ async def get_phone(message: types.Message, state: FSMContext):
     await message.answer("Отлично! Укажите адрес вашего помещения.")
     await state.set_state(PartnerApplicationState.waiting_for_address)
 
+# Запрос фото или видео с Inline-кнопкой "Пропустить"
 @partner_router.message(PartnerApplicationState.waiting_for_address)
 async def get_address(message: types.Message, state: FSMContext):
     await state.update_data(address=message.text)
-    await message.answer("Почти готово! Пожалуйста, отправьте фото или видео помещения (включая фасад).")
+    await message.answer(
+        "Почти готово! Пожалуйста, отправьте фото или видео помещения (включая фасад).\n"
+        "Если на данный момент у вас нет фото или видео, нажмите кнопку 'Пропустить'.",
+        reply_markup=skip_keyboard
+    )
     await state.set_state(PartnerApplicationState.waiting_for_photos)
 
+# Обработка отправки фото или видео
 @partner_router.message(PartnerApplicationState.waiting_for_photos)
 async def get_photos(message: types.Message, state: FSMContext):
     data = await state.get_data()
 
-    # Отправка данных в чат
+    # Текст заявки
     application_text = (
         f"Новая заявка от потенциального партнера:\n"
         f"ФИО: {data['full_name']}\n"
         f"Телефон: {data['phone']}\n"
         f"Адрес помещения: {data['address']}\n"
     )
-    await message.bot.send_message(PARTNER_CHAT_ID, application_text)
 
-    # Пересылка медиа
+    media_sent = False
     if message.photo:
+        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
         await message.bot.send_photo(PARTNER_CHAT_ID, photo=message.photo[-1].file_id)
+        media_sent = True
     elif message.video:
+        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
         await message.bot.send_video(PARTNER_CHAT_ID, video=message.video.file_id)
+        media_sent = True
     elif message.document:
+        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
         await message.bot.send_document(PARTNER_CHAT_ID, document=message.document.file_id)
+        media_sent = True
     elif message.audio:
+        await message.bot.send_message(PARTNER_CHAT_ID, application_text)
         await message.bot.send_audio(PARTNER_CHAT_ID, audio=message.audio.file_id)
+        media_sent = True
+
+    if not media_sent:
+        await message.answer(
+            "Файл не распознан. Если у вас нет фото или видео, нажмите кнопку 'Пропустить'.",
+            reply_markup=skip_keyboard
+        )
+        return
 
     await message.answer("Спасибо! Ваша заявка отправлена. Мы свяжемся с вами в ближайшее время.")
+    await state.clear()
+
+# Обработка нажатия кнопки "Пропустить"
+@partner_router.callback_query(lambda c: c.data == "skip_photos")
+async def skip_photos(callback: types.CallbackQuery, state: FSMContext):
+    data = await state.get_data()
+
+    # Текст заявки без медиа
+    application_text = (
+        f"Новая заявка от потенциального партнера:\n"
+        f"ФИО: {data['full_name']}\n"
+        f"Телефон: {data['phone']}\n"
+        f"Адрес помещения: {data['address']}\n"
+        f"Фото или видео не предоставлено."
+    )
+    await callback.bot.send_message(PARTNER_CHAT_ID, application_text)
+
+    await callback.message.edit_text("Спасибо! Ваша заявка отправлена без фото или видео. Мы свяжемся с вами в ближайшее время.")
     await state.clear()
 
 # Обработчик пересылки ответа из чата партнёров пользователю
