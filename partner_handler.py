@@ -8,7 +8,7 @@ from aiogram import Router, F, Bot
 from aiogram.filters import StateFilter
 
 # ID чата для получения заявок
-PARTNER_CHAT_ID = -1002314519913  # Замените на реальный ID
+PARTNER_CHAT_ID = -1002314519913я  # Замените на реальный ID
 LOGGING_CHAT_ID = 521620770  # Новый ID для логирования
 YANDEX_API_KEY = "7df099aa-c180-4c44-b0cd-258a05bdc8f2"
 # Создаем роутер для обработки заявок партнёров
@@ -173,7 +173,7 @@ async def finalize_application(message: Message, state: FSMContext, bot: Bot):
         await bot.send_media_group(PARTNER_CHAT_ID, media_group)
 
     # Подтверждение пользователю
-    await message.answer("✅ Ваша заявка успешно отправлена! Мы свяжемся с вами в ближайшее время.")
+    await message.answer("✅ Ваша заявка успешно отправлена! Спасибо за Ваше сообщение, мы ознакомимся с ним и в случае заинтересованности обязательно с Вами свяжемся.")
     await state.clear()
 
 # Обработка нажатия кнопки "Пропустить"
