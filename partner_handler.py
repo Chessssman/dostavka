@@ -6,6 +6,7 @@ import logging
 import requests
 from aiogram import Router, F, Bot
 from aiogram.filters import StateFilter
+import re
 
 # ID чата для получения заявок
 PARTNER_CHAT_ID = -1002314519913  # Замените на реальный ID
@@ -204,17 +205,28 @@ async def skip_photos(callback: CallbackQuery, state: FSMContext, bot: Bot):
     await state.clear()
 
 
-# Обработка ответа от поддержки
+# Обработка ответа оператора в чате поддержки
 @partner_router.message()
 async def forward_partner_response(message: Message, bot: Bot):
     if message.chat.id == PARTNER_CHAT_ID:  # Проверяем, что сообщение пришло из чата поддержки
-        parts = message.text.split(":", 1)
-        if len(parts) == 2:
-            try:
-                user_id = int(parts[0].strip())  # Извлекаем ID пользователя
-                partner_response = parts[1].strip()
+        if not message.reply_to_message:
+            await message.answer("⚠ Ошибка: Ответ должен быть на сообщение заявки.")
+            return
 
-                await bot.send_message(user_id, f"📩 <b>Ответ на вашу заявку:</b>\n\n{partner_response}", parse_mode="HTML")
-            except ValueError:
-                logging.warning(f"Некорректный формат сообщения в чате поддержки: {message.text}")
+        # Ищем ID пользователя в исходном сообщении
+        match = re.search(r"ID пользователя: (\d+)", message.reply_to_message.text)
+        if not match:
+            await message.answer("⚠ Ошибка: Не удалось найти ID пользователя в сообщении заявки.")
+            return
+
+        user_id = int(match.group(1))  # Получаем ID пользователя
+
+        # Отправляем ответ пользователю
+        try:
+            await bot.send_message(
+                user_id, f"📩 <b>Ответ на вашу заявку:</b>\n\n{message.text}", parse_mode="HTML"
+            )
+            await message.answer("✅ Ответ отправлен пользователю.")
+        except Exception as e:
+            await message.answer(f"❌ Ошибка отправки ответа: {e}")
 
