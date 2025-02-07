@@ -28,8 +28,6 @@ skip_keyboard = InlineKeyboardMarkup(
     ]
 )
 
-
-
 # Состояния для FSM
 class PartnerApplicationState(StatesGroup):
     waiting_for_full_name = State()
@@ -69,7 +67,6 @@ async def partner_info(callback: types.CallbackQuery):
     logging.info(f"User {callback.from_user.id} clicked on the 'Как стать партнером?' button.")
     await callback.bot.send_message(LOGGING_CHAT_ID,f"User {callback.from_user.id} clicked on the 'Как стать партнером?' button.")
 
-
 # Функция поиска адреса через Яндекс.Карты
 def find_address_on_yandex(address):
     url = "https://geocode-maps.yandex.ru/1.x/"
@@ -87,13 +84,11 @@ def find_address_on_yandex(address):
             return None, None
     return None, None
 
-
 # Старт подачи заявки
 @partner_router.callback_query(F.data == "submit_application")
 async def start_application(callback: CallbackQuery, state: FSMContext):
     await callback.message.answer("Пожалуйста, укажите ваше ФИО.")
     await state.set_state(PartnerApplicationState.waiting_for_full_name)
-
 
 # Получение ФИО
 @partner_router.message(StateFilter(PartnerApplicationState.waiting_for_full_name))
@@ -102,14 +97,12 @@ async def get_full_name(message: Message, state: FSMContext):
     await message.answer("Спасибо! Теперь укажите ваш номер телефона.")
     await state.set_state(PartnerApplicationState.waiting_for_phone)
 
-
 # Получение телефона
 @partner_router.message(StateFilter(PartnerApplicationState.waiting_for_phone))
 async def get_phone(message: Message, state: FSMContext):
     await state.update_data(phone=message.text)
     await message.answer("Выберите ваш регион:", reply_markup=region_keyboard)
     await state.set_state(PartnerApplicationState.waiting_for_region)
-
 
 # Обработка выбора региона
 @partner_router.callback_query(StateFilter(PartnerApplicationState.waiting_for_region))
@@ -118,7 +111,6 @@ async def get_region(callback: CallbackQuery, state: FSMContext):
     await state.update_data(region=region)
     await callback.message.answer("Спасибо! Укажите адрес вашего помещения.")
     await state.set_state(PartnerApplicationState.waiting_for_address)
-
 
 # Получение адреса
 @partner_router.message(StateFilter(PartnerApplicationState.waiting_for_address))
@@ -138,7 +130,7 @@ async def get_address(message: Message, state: FSMContext):
     )
     await state.set_state(PartnerApplicationState.waiting_for_photos)
 
-
+# Обработка фото/видео и отправка заявки
 # Обработка фото/видео и отправка заявки
 @partner_router.message(StateFilter(PartnerApplicationState.waiting_for_photos),
                         F.content_type.in_({"photo", "video", "text"}))
@@ -148,6 +140,7 @@ async def finalize_application(message: Message, state: FSMContext, bot: Bot):
     address_input = user_data.get("address")
     address_found = user_data.get("address_found", "Не найдено")
     map_link = user_data.get("map_link", "Нет данных")
+    user_id = message.from_user.id  # Получаем ID пользователя
 
     # Обработка фото или видео
     media_group = []
@@ -165,6 +158,7 @@ async def finalize_application(message: Message, state: FSMContext, bot: Bot):
         f"🏠 <b>Адрес:</b> {address_input}\n"
         f"🗺️ <b>Найденный адрес:</b> {address_found}\n"
         f"🔗 <b>Ссылка на карту:</b> <a href='{map_link}'>Открыть в Яндекс.Картах</a>\n"
+        f"🆔 <b>ID пользователя:</b> {user_id}"
     )
 
     # Отправка данных в чат поддержки
@@ -173,8 +167,9 @@ async def finalize_application(message: Message, state: FSMContext, bot: Bot):
         await bot.send_media_group(PARTNER_CHAT_ID, media_group)
 
     # Подтверждение пользователю
-    await message.answer("✅ Ваша заявка успешно отправлена!Спасибо за Ваше сообщение, мы ознакомимся с ним и в случае заинтересованности обязательно с Вами свяжемся.")
+    await message.answer("✅ Ваша заявка успешно отправлена! Спасибо за Ваше сообщение, мы ознакомимся с ним и в случае заинтересованности обязательно с Вами свяжемся.")
     await state.clear()
+
 
 # Обработка нажатия кнопки "Пропустить"
 @partner_router.callback_query(lambda c: c.data == "skip_photos")
@@ -184,6 +179,7 @@ async def skip_photos(callback: CallbackQuery, state: FSMContext, bot: Bot):
     address_input = user_data.get("address")
     address_found = user_data.get("address_found", "Не найдено")
     map_link = user_data.get("map_link", "Нет данных")
+    user_id = callback.from_user.id  # Получаем ID пользователя
 
     # Формирование сообщения для поддержки
     support_message = (
@@ -194,7 +190,8 @@ async def skip_photos(callback: CallbackQuery, state: FSMContext, bot: Bot):
         f"🏠 <b>Адрес:</b> {address_input}\n"
         f"🗺️ <b>Найденный адрес:</b> {address_found}\n"
         f"🔗 <b>Ссылка на карту:</b> <a href='{map_link}'>Открыть в Яндекс.Картах</a>\n"
-        f"🖼️ <b>Фото или видео:</b> <i>Не предоставлено</i>"
+        f"🖼️ <b>Фото или видео:</b> <i>Не предоставлено</i>\n"
+        f"🆔 <b>ID пользователя:</b> {user_id}"
     )
 
     # Отправка данных в чат поддержки
@@ -206,33 +203,18 @@ async def skip_photos(callback: CallbackQuery, state: FSMContext, bot: Bot):
     )
     await state.clear()
 
-# Обработчик пересылки ответа из чата партнёров пользователю
+
+# Обработка ответа от поддержки
 @partner_router.message()
-async def forward_partner_response(message: types.Message):
-    if message.chat.id == PARTNER_CHAT_ID:  # Замените на реальный ID чата с партнёрами
-        # Проверка типа медиафайла и отправка соответствующего
-        parts = message.text.split("\n", 1)
+async def forward_partner_response(message: Message, bot: Bot):
+    if message.chat.id == PARTNER_CHAT_ID:  # Проверяем, что сообщение пришло из чата поддержки
+        parts = message.text.split(":", 1)
         if len(parts) == 2:
-            user_id = int(parts[0])
-            partner_response = parts[1].strip()
+            try:
+                user_id = int(parts[0].strip())  # Извлекаем ID пользователя
+                partner_response = parts[1].strip()
 
-            # Отправляем текстовое сообщение пользователю
-            await message.bot.send_message(user_id, f"Ответ на вашу заявку:\n\n{partner_response}")
-
-            # Пересылка всех фото (если есть)
-            if message.photo:
-                for photo in message.photo:
-                    await message.bot.send_photo(user_id, photo=photo.file_id)
-
-            # Пересылка всех видео (если есть)
-            elif message.video:
-                await message.bot.send_video(user_id, video=message.video.file_id)
-
-            # Пересылка всех документов (если есть)
-            elif message.document:
-                await message.bot.send_document(user_id, document=message.document.file_id)
-
-            # Пересылка всех аудио (если есть)
-            elif message.audio:
-                await message.bot.send_audio(user_id, audio=message.audio.file_id)
+                await bot.send_message(user_id, f"📩 <b>Ответ на вашу заявку:</b>\n\n{partner_response}", parse_mode="HTML")
+            except ValueError:
+                logging.warning(f"Некорректный формат сообщения в чате поддержки: {message.text}")
 
