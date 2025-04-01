@@ -29,6 +29,14 @@ skip_keyboard = InlineKeyboardMarkup(
     ]
 )
 
+# Клавиатура для пропуска отправки фото
+skip_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Пропустить", callback_data="skip_photos")]
+    ]
+)
+
+
 # Состояния для FSM
 class PartnerApplicationState(StatesGroup):
     waiting_for_full_name = State()
