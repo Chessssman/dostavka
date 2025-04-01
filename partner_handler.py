@@ -29,6 +29,12 @@ skip_keyboard = InlineKeyboardMarkup(
     ]
 )
 
+ai_keyboard = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="FAQ", callback_data="faq_data")]
+    ]
+)
+
 # Состояния для FSM
 class PartnerApplicationState(StatesGroup):
     waiting_for_full_name = State()
