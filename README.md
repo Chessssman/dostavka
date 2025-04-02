@@ -1,59 +1,73 @@
-Телеграмм чат-бот +7Доставки (ООО «Айси-Транс», доставка Ozon на территории ДНР, ЛНР, ХО, ХО)
-Описание проекта
-Чат-бот +7Доставки предназначен для автоматизации обработки заказов, отслеживания посылок и взаимодействия с клиентами. Бот будет интегрирован с CRM, API Ozon и системой логистики ООО «Айси-Транс».
-________________________________________
-Модули проекта
-1. Компонент авторизации пользователей  
-• Регистрация клиентов по номеру телефона через Telegram ID.  
-• Проверка учетных данных и привязка к CRM.  
-• Создание и управление токенами доступа для безопасного взаимодействия с API. 
+# Welcome to your Lovable project
 
-2. Система оформления заказа  
-• Интерактивная форма для ввода данных о доставке.  
-• Интеграция с API Ozon для автоматического подтягивания информации о заказах.  
-• Возможность выбора адреса доставки и удобного времени.  
+## Project info
 
-3. Инструмент отслеживания отправлений  
-• Запрос статуса посылки по номеру заказа.  
-• Автоматические уведомления о смене статуса (в пути, прибыло в пункт выдачи, выдано).  
-• Интеграция с логистической системой для актуальных данных.  
+**URL**: https://lovable.dev/projects/b698e728-e515-4661-acc8-4a8af1f044fd
 
-4. Платформа уведомлений и оповещений  
-• Настройка шаблонов уведомлений (SMS, Telegram).  
-• Автоматическая рассылка сообщений клиентам о статусе их заказов.  
-• Напоминания о получении посылки через определенное время.  
+## How can I edit this code?
 
-5. Средство взаимодействия с операторами поддержки  
-• Возможность создания запроса на связь с оператором.  
-• Встроенный чат с поддержкой.  
-• Категоризация обращений (вопрос по заказу, возврат, проблема с доставкой).  
+There are several ways of editing your application.
 
-6. Решение для обработки возвратов и претензий  
-• Форма запроса на возврат.  
-• Автоматическая генерация накладной для возврата.  
-• Интеграция с API Ozon для отправки информации о возврате.  
+**Use Lovable**
 
-7. Инструментарий управления курьерами  
-• Авторизация курьеров в системе.  
-• Назначение заказов на курьеров.  
-• Геолокация для отслеживания текущего местоположения.  
+Simply visit the [Lovable Project](https://lovable.dev/projects/b698e728-e515-4661-acc8-4a8af1f044fd) and start prompting.
 
-8. Система аналитики и отчетности  
-• Сбор статистики по доставкам (сроки, количество выполненных заказов, среднее время обработки).  
-• Анализ загруженности курьеров.  
-• Выгрузка отчетов в формате CSV или Excel.  
+Changes made via Lovable will be committed automatically to this repo.
 
-9. Интеграция с платежными системами  
-• Поддержка онлайн-оплаты доставки через Telegram.  
-• Генерация QR-кода для оплаты.  
-• Уведомления о поступлении оплаты.  
+**Use your preferred IDE**
 
-10. Панель администрирования и управления ботом  
-• Интерфейс управления для операторов.  
-• Настройки тарифов, зон доставки.  
-• Контроль логов и истории заказов.  
-•	Контроль логов и истории заказов.
-________________________________________
-Проект будет разрабатываться с использованием Python (Aiogram, FastAPI), базы данных SQLite/PostgreSQL, а также API Ozon и CRM.
-Репозиторий проекта: GitHub
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+
+Follow these steps:
+
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
+
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
+
+# Step 3: Install the necessary dependencies.
+npm i
+
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
+
+**Edit a file directly in GitHub**
+
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
+
+- Vite
+- TypeScript
+- React
+- shadcn-ui
+- Tailwind CSS
+
+## How can I deploy this project?
+
+Simply open [Lovable](https://lovable.dev/projects/b698e728-e515-4661-acc8-4a8af1f044fd) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes it is!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
