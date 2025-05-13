@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from keyboard import get_start_keyboard
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardRemove
 from callback_handler import callback_router
+from middlewares.log_user import UserLoggingMiddleware
 import pandas as pd
 from geopy.distance import geodesic
 from aiogram import Router, F
@@ -58,7 +59,8 @@ logging.basicConfig(level=logging.INFO)
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-
+dp.message.middleware(UserLoggingMiddleware())
+dp.callback_query.middleware(UserLoggingMiddleware())
 dp.include_router(partner_router)
 dp.include_router(callback_router)
 dp.include_router(support_router)
@@ -189,9 +191,7 @@ async def handle_location(message: Message):
     await message.reply(response, parse_mode="HTML")
 
 
-@dp.message()
-async def catch_all_messages(message: types.Message):
-    save_user_id(message.from_user.id)
+
 
 dp.include_router(router)
 
