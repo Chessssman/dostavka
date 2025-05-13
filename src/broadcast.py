@@ -3,7 +3,7 @@ import json
 import random
 import logging
 from aiogram import Bot
-from aiogram.types import InputFile
+from aiogram.types import FSInputFile
 from src.user_storage import load_user_ids
 
 ADS_FOLDER = "ads"
@@ -30,8 +30,8 @@ async def send_random_ad(bot: Bot):
 
     for user_id in user_ids:
         try:
-            photo = InputFile(image_path)
-            await bot.send_photo(chat_id=int(user_id), photo=photo, caption=caption)
+            photo = FSInputFile(image_path)
+            await bot.send_photo(chat_id=int(user_id), photo=photo, caption=caption, parse_mode="HTML")
             logging.info(f"Реклама отправлена пользователю {user_id}")
         except Exception as e:
             logging.error(f"Ошибка отправки рекламы пользователю {user_id}: {e}")
