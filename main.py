@@ -7,7 +7,7 @@ from aiogram.filters.command import Command
 from aiogram.exceptions import TelegramAPIError
 from dotenv import load_dotenv
 from keyboard import get_start_keyboard
-from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardRemove
+from aiogram.types import ReplyKeyboardRemove
 from callback_handler import callback_router
 from middlewares.log_user import UserLoggingMiddleware
 import pandas as pd
@@ -18,6 +18,7 @@ from aiogram.fsm.state import State, StatesGroup
 import keep_alive
 from support_handler import callback_router as support_router
 from partner_handler import partner_router
+from src.broadcast import send_random_ad
 
 
 load_dotenv()
@@ -92,6 +93,13 @@ async def list_user_ids(message: types.Message):
         await message.answer("Список пользователей пуст.")
     else:
         await message.answer("Список ID пользователей:\n" + "\n".join(user_ids))
+
+# Команда: /broadcast
+@dp.message(Command("broadcast"))
+async def broadcast_ads(message: types.Message):
+    await message.answer("Рассылаю рекламу...")
+    await send_random_ad(bot)
+
 
 @dp.callback_query(lambda c: c.data == "open_main")
 async def process_open_main(callback: types.CallbackQuery):
