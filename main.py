@@ -22,11 +22,29 @@ from partner_handler import partner_router
 load_dotenv()
 
 BOT_TOKEN = os.getenv('API_KEY')
+USER_IDS_FILE = "user_ids.txt"
+
+
+def load_user_ids():
+    if not os.path.exists(USER_IDS_FILE):
+        return set()
+    with open(USER_IDS_FILE, "r") as file:
+        return set(line.strip() for line in file if line.strip().isdigit())
+
+def save_user_id(user_id: int):
+    user_ids = load_user_ids()
+    if str(user_id) not in user_ids:
+        with open(USER_IDS_FILE, "a") as file:
+            file.write(f"{user_id}\n")
+
+
 
 logging.basicConfig(level=logging.INFO)
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
+
+
 dp.include_router(partner_router)
 dp.include_router(callback_router)
 dp.include_router(support_router)
@@ -50,6 +68,14 @@ async def cmd_start(message: types.Message):
                          "<a href='https://www.ozon.ru/'>топового маркетплейса РФ</a>.",
                          reply_markup=get_start_keyboard(), parse_mode="HTML")
 
+
+@dp.message(Command("list"))
+async def list_user_ids(message: types.Message):
+    user_ids = load_user_ids()
+    if not user_ids:
+        await message.answer("Список пользователей пуст.")
+    else:
+        await message.answer("Список ID пользователей:\n" + "\n".join(user_ids))
 
 @dp.callback_query(lambda c: c.data == "open_main")
 async def process_open_main(callback: types.CallbackQuery):
@@ -149,6 +175,9 @@ async def handle_location(message: Message):
     await message.reply(response, parse_mode="HTML")
 
 
+@dp.message()
+async def catch_all_messages(message: types.Message):
+    save_user_id(message.from_user.id)
 
 dp.include_router(router)
 
