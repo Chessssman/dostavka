@@ -4,56 +4,55 @@ from aiogram import Router, types, F
 from aiogram.types import CallbackQuery
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
+import re
 
-# Состояния для машины состояний
 class SupportState(StatesGroup):
     waiting_for_question = State()
 
 callback_router = Router()
 
-# Обработчик для кнопки "Обратиться в поддержку"
 @callback_router.callback_query(lambda c: c.data == "support")
 async def support_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("🛠 Пожалуйста, опишите вашу проблему или задайте вопрос (можно прикрепить фото/видео).")
+    await callback.message.answer("🛠 Опишите вашу проблему (можно фото/видео).")
     await state.set_state(SupportState.waiting_for_question)
 
-# Обработчик получения вопроса
 @callback_router.message(SupportState.waiting_for_question)
 async def receive_support_question(message: types.Message, state: FSMContext):
     support_chat_id = -1002296401929 
     
-    # Формируем заголовок с ID пользователя, чтобы админ знал, кому отвечать
-    # Если вы используете логику "ответ реплаем", ID нужен в тексте
-    header = f"{message.from_user.id}: Новый вопрос:\n"
-    content = message.text or message.caption or ""
+    user_id = message.from_user.id
+    text_content = message.text or message.caption or "[Файл]"
     
-    full_text = header + content
+    # !!! ВАЖНО: Добавляем ID в начало сообщения !!!
+    info_header = f"ID: {user_id}\nВопрос от пользователя:\n"
+    
+    full_text = info_header + text_content
 
-    # Копируем сообщение админу
+    # Используем copy_to, чтобы работали вложения
     await message.copy_to(support_chat_id, caption=full_text)
 
-    await message.answer("Ваш вопрос был отправлен в техподдержку. Ожидайте ответа.")
+    await message.answer("Ваш вопрос отправлен.")
     await state.clear()
 
 
-# Обработчик пересылки ответа из техподдержки пользователю
-# (Если используется формат ответа "ID: ответ")
+# Обработчик ответа (парсим ID из строки "ID: 12345")
 @callback_router.message()
 async def forward_support_response(message: types.Message):
-    if message.chat.id == -1002296401929:
-        # Получаем текст (или подпись, если админ отправил фото)
-        admin_text = message.text or message.caption
-        
-        if admin_text and ":" in admin_text:
-            parts = admin_text.split(":", 1)
-            # Проверяем, что первая часть похожа на ID (цифры)
-            if len(parts) == 2 and parts[0].strip().isdigit():
-                user_id = int(parts[0])
-                support_answer = parts[1].strip()
-                
-                # Отправляем ответ пользователю через copy_to (чтобы работали фото от админа)
-                # Подменяем caption на чистый ответ (без ID)
-                await message.copy_to(user_id, caption=f"Ответ от техподдержки:\n\n{support_answer}")
-            else:
-                # Если это не формат "ID: ответ", возможно это просто общение админов
-                pass
+    if message.chat.id == -1002296401929: # ID чата поддержки
+        # Проверяем, есть ли реплай с ID
+        if message.reply_to_message:
+            original_text = message.reply_to_message.text or message.reply_to_message.caption or ""
+            match = re.search(r"ID:\s*(\d+)", original_text)
+            
+            if match:
+                user_id = int(match.group(1))
+                await message.copy_to(user_id, caption=f"Ответ техподдержки:\n\n{message.text or message.caption or ''}")
+                return
+
+        # Если старая логика (через двоеточие в самом сообщении "12345: ответ"), оставляем как запасной вариант:
+        text = message.text or message.caption or ""
+        parts = text.split(":", 1)
+        if len(parts) == 2 and parts[0].strip().isdigit():
+            user_id = int(parts[0])
+            answer_text = parts[1].strip()
+            await message.bot.send_message(user_id, f"Ответ техподдержки:\n\n{answer_text}")
