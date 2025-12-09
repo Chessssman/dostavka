@@ -123,34 +123,57 @@ async def support_start(callback: types.CallbackQuery, state: FSMContext):
 # Обработка вопроса от пользователя
 @dp.message(SupportState.waiting_for_question)
 async def handle_question(message: types.Message, state: FSMContext, bot: Bot):
-    user_question = message.text
+    # Формируем "шапку" сообщения для техподдержки
+    user_info = f"🔔 Вопрос от пользователя @{message.from_user.username} (ID: {message.from_user.id}):\n\n"
+    
+    # Получаем текст сообщения пользователя (из текста или подписи к медиа)
+    user_text = message.text or message.caption or ""
+    
+    # Объединяем шапку и текст пользователя
+    full_caption = user_info + user_text
 
-    # Пересылаем вопрос в чат техподдержки
-    forward_message = await bot.send_message(
-        SUPPORT_CHAT_ID,
-        f"🔔 Вопрос от пользователя @{message.from_user.username} (ID: {message.from_user.id}):\n{user_question}"
+    # Используем copy_to - это универсальный метод копирования (текст, фото, видео и т.д.)
+    # Аргумент caption работает и для текстовых сообщений (как текст), и для медиа (как подпись)
+    forward_message = await message.copy_to(
+        chat_id=SUPPORT_CHAT_ID,
+        caption=full_caption,
+        parse_mode=None # Отключаем парсинг, чтобы никнеймы не ломали HTML/Markdown
     )
 
-    # Сохраняем данные для ответа
+    # Сохраняем данные (если нужно для логики, хотя при copy_to ID сохранять не обязательно, если парсим из reply)
     await state.update_data(user_chat_id=message.chat.id, support_message_id=forward_message.message_id)
 
     await message.answer("✅ Ваш вопрос отправлен в службу поддержки. Ожидайте ответа.")
-    await state.clear()  # Очищаем состояние
+    await state.clear()
 
 
 # Обработка ответа от техподдержки
 @dp.message(F.chat.id == SUPPORT_CHAT_ID)
 async def forward_answer_from_support(message: types.Message, bot: Bot):
     if message.reply_to_message:
-        # Извлекаем ID пользователя
-        question_info = message.reply_to_message.text.split('\n')[0]
-        user_id = int(question_info.split('(ID: ')[1].replace('):', ''))
+        # Ищем информацию о пользователе в тексте ИЛИ в подписи исходного сообщения
+        original_text = message.reply_to_message.text or message.reply_to_message.caption
+        
+        if not original_text:
+            await message.answer("❌ Не удалось определить ID пользователя (нет текста в исходном сообщении).")
+            return
 
-        # Пересылаем ответ пользователю
-        await bot.send_message(
-            user_id,
-            f"💬 Ответ от службы поддержки:\n{message.text}"
-        )
+        try:
+            # Извлекаем ID (предполагаем формат: "... (ID: 12345): ...")
+            # Берем первую строку
+            info_line = original_text.split('\n')[0]
+            if "(ID: " in info_line:
+                user_id = int(info_line.split('(ID: ')[1].split('):')[0])
+                
+                # Пересылаем ответ пользователю (копируем, чтобы работали и фото, и текст от админа)
+                await message.copy_to(
+                    chat_id=user_id,
+                    caption=f"💬 Ответ от службы поддержки:\n\n{message.text or message.caption or ''}"
+                )
+            else:
+                await message.answer("❌ Не удалось найти ID в первой строке сообщения.")
+        except Exception as e:
+            await message.answer(f"❌ Ошибка при отправке ответа: {e}")
 
 
 # Функция для удаления вебхука
