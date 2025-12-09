@@ -123,57 +123,66 @@ async def support_start(callback: types.CallbackQuery, state: FSMContext):
 # Обработка вопроса от пользователя
 @dp.message(SupportState.waiting_for_question)
 async def handle_question(message: types.Message, state: FSMContext, bot: Bot):
-    # 1. Получаем ID и Username
     user_id = message.from_user.id
     username = message.from_user.username or "NoUsername"
     
-    # 2. Получаем текст сообщения (даже если это подпись к фото)
-    content = message.text or message.caption or "[Медиафайл без текста]"
+    # Формируем "Технический заголовок"
+    # Он будет виден админу и использоваться ботом для парсинга
+    header = f"🆔 ID: {user_id}\n👤 User: @{username}\n➖➖➖➖➖➖➖➖\n"
 
-    # 3. Формируем заголовок, который ВСЕГДА содержит ID в первой строке
-    # Формат: ID: 123456789
-    header = f"ID: {user_id} | @{username}\nВопрос: "
-    
-    # Объединяем (обрезаем, если слишком длинно для caption, лимит 1024)
-    full_caption = (header + content)[:1024]
+    # Если это просто текст
+    if message.text:
+        # Соединяем заголовок и текст пользователя
+        full_text = header + message.text
+        # Отправляем новое сообщение
+        sent_msg = await bot.send_message(SUPPORT_CHAT_ID, full_text)
+        await state.update_data(support_message_id=sent_msg.message_id)
 
-    # 4. Используем copy_to - отправляет и фото, и видео, и текст
-    forward_message = await message.copy_to(
-        chat_id=SUPPORT_CHAT_ID,
-        caption=full_caption
-    )
+    # Если это фото, видео, голосовое или документ
+    else:
+        # Берем подпись пользователя или пустую строку
+        original_caption = message.caption or ""
+        full_caption = header + original_caption
+        
+        # copy_to позволяет отправить медиа с новой подписью
+        sent_msg = await message.copy_to(
+            chat_id=SUPPORT_CHAT_ID,
+            caption=full_caption
+        )
+        await state.update_data(support_message_id=sent_msg.message_id)
 
-    await state.update_data(user_chat_id=user_id, support_message_id=forward_message.message_id)
-    await message.answer("✅ Ваш вопрос отправлен. Ожидайте ответа.")
+    await message.answer("✅ Ваш вопрос отправлен в службу поддержки. Ожидайте ответа.")
     await state.clear()
 
 
 # Обработка ответа от техподдержки
 @dp.message(F.chat.id == SUPPORT_CHAT_ID)
 async def forward_answer_from_support(message: types.Message, bot: Bot):
-    if message.reply_to_message:
-        # Получаем текст исходного сообщения (или подпись)
-        original_caption = message.reply_to_message.caption or message.reply_to_message.text or ""
-        
-        # Пытаемся найти ID в начале строки (формат "ID: 12345...")
-        user_id = None
-        
-        # Простой поиск числа после "ID: "
-        import re
-        match = re.search(r"ID:\s*(\d+)", original_caption)
-        
-        if match:
-            user_id = int(match.group(1))
-            
-            # Отправляем ответ пользователю
-            try:
-                # copy_to позволяет админу отвечать голосовым, фото или текстом
-                await message.copy_to(chat_id=user_id, caption=f"💬 Ответ поддержки:\n\n{message.text or message.caption or ''}")
-            except Exception as e:
-                await message.answer(f"❌ Не удалось отправить ответ пользователю (возможно, он заблокировал бота). Ошибка: {e}")
-        else:
-            await message.answer("⚠ Не удалось найти ID пользователя в сообщении, на которое вы отвечаете. Убедитесь, что отвечаете на сообщение с заголовком 'ID: ...'")
+    # Проверяем, что это ответ на сообщение (Reply)
+    if not message.reply_to_message:
+        return
 
+    # Получаем текст или подпись сообщения, НА КОТОРОЕ ответил админ
+    replied_content = message.reply_to_message.text or message.reply_to_message.caption or ""
+
+    # Ищем ID пользователя с помощью регулярного выражения
+    # Ищет "ID: " и следующие за ним цифры
+    match = re.search(r"🆔 ID: (\d+)", replied_content)
+
+    if match:
+        user_id = int(match.group(1))
+
+        try:
+            # Отправляем ответ пользователю (copy_to отправит и текст, и фото, и голос от админа)
+            await message.copy_to(
+                chat_id=user_id,
+                caption=f"💬 Ответ от поддержки:\n\n{message.text or message.caption or ''}"
+            )
+        except Exception as e:
+            await message.answer(f"❌ Не удалось доставить сообщение пользователю. Ошибка: {e}")
+    else:
+        # Если админ ответил не на то сообщение
+        await message.answer("⚠ Ошибка: Не найден ID пользователя. Пожалуйста, отвечайте на сообщение, содержащее строку '🆔 ID: ...'")
 
 # Функция для удаления вебхука
 async def delete_webhook():
